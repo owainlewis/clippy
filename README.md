@@ -1,4 +1,4 @@
-# Viral Clip Generator
+# Clippy
 
 A Python tool for extracting and processing video clips to create engaging, social media-ready content.
 
@@ -23,8 +23,8 @@ A Python tool for extracting and processing video clips to create engaging, soci
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/viral-clip-generator.git
-   cd viral-clip-generator
+   git clone https://github.com/owainlewis/clippy.git
+   cd clippy
    ```
 
 2. Create a virtual environment (optional but recommended):
@@ -45,7 +45,7 @@ A Python tool for extracting and processing video clips to create engaging, soci
 Extract a clip from a video file or URL:
 
 ```bash
-python viral_clip_generator.py video_source [options]
+python clippy.py video_source [options]
 ```
 
 #### Options:
@@ -82,7 +82,7 @@ Time ranges can be specified in multiple formats:
 You can also use the tool programmatically:
 
 ```python
-from viral_clip_generator import ViralClipGenerator
+from clippy import ViralClipGenerator
 
 # Initialize the generator
 generator = ViralClipGenerator(output_dir="output_clips")
