@@ -275,11 +275,30 @@ def main():
     parser.add_argument("--no-text", action="store_false", dest="add_text", 
                         help="Disable text overlay")
     parser.add_argument("--output-dir", default="output", help="Output directory")
+    parser.add_argument("--download-only", action="store_true", 
+                        help="Only download the video without creating clips")
+    parser.add_argument("--output-filename", 
+                        help="Custom filename for downloaded video (only used with --download-only)")
     
     args = parser.parse_args()
     
     generator = ViralClipGenerator(output_dir=args.output_dir)
     
+    # Handle download-only option
+    if args.download_only:
+        if not args.source.startswith(("http://", "https://")):
+            print("Error: --download-only option requires a URL as the source")
+            return
+        
+        output_path = None
+        if args.output_filename:
+            output_path = os.path.join(args.output_dir, args.output_filename)
+            
+        downloaded_path = generator.download_video(args.source, output_path)
+        print(f"Video downloaded successfully: {downloaded_path}")
+        return
+    
+    # Regular clip generation
     final_path = generator.create_viral_clip(
         args.source,
         clip_duration=args.duration,
