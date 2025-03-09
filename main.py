@@ -28,10 +28,11 @@ class ViralClipGenerator:
             str: Path to the downloaded video file
         """
         if output_path is None:
-            output_path = os.path.join(self.output_dir, "source_video.mp4")
+            output_path = os.path.join(self.output_dir, "source_video")
             
+        # Download in best available format without conversion
         ydl_opts = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+            'format': 'best',
             'outtmpl': output_path,
             'quiet': True
         }
