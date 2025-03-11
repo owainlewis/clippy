@@ -11,6 +11,8 @@ A Python tool for extracting and processing video clips to create engaging, soci
 - Add text overlays like calls-to-action
 - Format videos for various social media platforms (portrait, square, landscape)
 - Command-line interface for easy use in scripts and automation workflows
+- Download-only option for saving videos without processing
+- Easy conversion between video formats using Make
 
 ## Installation
 
@@ -18,6 +20,7 @@ A Python tool for extracting and processing video clips to create engaging, soci
 
 - Python 3.7+
 - FFmpeg (for video processing)
+- Make (for using the Makefile functionality)
 
 ### Setup
 
@@ -27,15 +30,33 @@ A Python tool for extracting and processing video clips to create engaging, soci
    cd clippy
    ```
 
-2. Create a virtual environment (optional but recommended):
+2. Create a virtual environment and install dependencies:
+
+   #### Using pip (traditional method):
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
    ```
 
-3. Install dependencies:
+   #### Using uv (faster alternative):
    ```bash
-   pip install -r requirements.txt
+   # Install uv if you don't have it
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Create virtual environment and install dependencies
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   uv pip install -r requirements.txt
+   ```
+
+   #### Using the Makefile (recommended):
+   ```bash
+   # This will set up everything and create an activation script
+   make setup
+   
+   # Then activate the environment in your current shell
+   source ./activate_env.sh
    ```
 
 ## Usage
@@ -56,19 +77,54 @@ python clippy.py video_source [options]
 - `--no-subs`: Disable subtitles
 - `--no-text`: Disable text overlay
 - `--output-dir DIRECTORY`: Directory to save output files
+- `--download-only`: Only download the video without creating clips
+- `--output-filename FILENAME`: Custom filename for downloaded video (only used with --download-only)
 
 #### Examples:
 
 ```bash
 # Extract from 1:13 to 1:45 from a YouTube video
-python viral_clip_generator.py https://www.youtube.com/watch?v=VIDEO_ID --time-range "1:13-1:45"
+python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --time-range "1:13-1:45"
 
 # Extract a 30-second random clip from a local file in square format
-python viral_clip_generator.py my_video.mp4 --duration 30 --format square
+python clippy.py my_video.mp4 --duration 30 --format square
 
 # Create a portrait mode clip with no text overlay
-python viral_clip_generator.py my_video.mp4 --time-range "2:30-3:15" --format portrait --no-text
+python clippy.py my_video.mp4 --time-range "2:30-3:15" --format portrait --no-text
+
+# Just download a video without processing it
+python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --download-only
+
+# Download with a custom filename
+python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --download-only --output-filename="my_video.mp4"
 ```
+
+### Using the Makefile (macOS)
+
+For macOS users, a Makefile is provided for common operations:
+
+```bash
+# Clean the output directory
+make clean
+
+# Convert a downloaded video to MP4 format
+make convert
+
+# For help with Makefile commands
+make help
+```
+
+#### Typical Workflow with Makefile:
+
+1. Download a video: 
+   ```bash
+   python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --download-only
+   ```
+
+2. Convert to MP4 format:
+   ```bash
+   make convert
+   ```
 
 ### Time Format
 
@@ -103,6 +159,10 @@ clip_path = generator.create_viral_clip(
     clip_duration=15,  # 15 seconds
     format="square"
 )
+
+# Just download a video without processing
+downloaded_path = generator.download_video("https://www.youtube.com/watch?v=VIDEO_ID")
+print(f"Video downloaded to: {downloaded_path}")
 ```
 
 ## Advanced Usage

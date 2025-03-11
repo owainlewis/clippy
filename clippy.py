@@ -30,17 +30,18 @@ class ViralClipGenerator:
         if output_path is None:
             output_path = os.path.join(self.output_dir, "source_video")
             
-        # Download in best available format without conversion
+        # Download in best available quality
+        # This selects the best video and audio separately and then merges them
         ydl_opts = {
-            'format': 'best',
-            'outtmpl': output_path,
-            'quiet': True
+            'outtmpl': output_path + '.%(ext)s',  # Let yt-dlp add the correct extension
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            info = ydl.extract_info(url, download=True)
+            downloaded_file = ydl.prepare_filename(info)
             
-        return output_path
+        print(f"Video downloaded to: {downloaded_file}")
+        return downloaded_file
     
     def get_video_duration(self, video_path):
         """Get the duration of a video file.
@@ -93,37 +94,179 @@ class ViralClipGenerator:
         subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return output_path
     
-    def add_subtitles(self, video_path, output_path=None):
-        """Add subtitles to a video using speech recognition.
+    def add_subtitles(self, video_path, output_path=None, model_size="base"):
+        """Add subtitles to a video using OpenAI's Whisper speech recognition.
         
         Args:
             video_path (str): Path to the video
             output_path (str, optional): Path to save the video with subtitles
+            model_size (str, optional): Whisper model size ('tiny', 'base', 'small', 'medium', 'large')
             
         Returns:
             str: Path to the video with subtitles
         """
-        # For this function you'll need to install additional libraries:
-        # pip install vosk or whisper for speech recognition
-        # This is a placeholder - implement speech-to-text and subtitle burning as needed
-        
-        # Example implementation with whisper:
-        # 1. Extract audio
-        # 2. Transcribe audio with timestamps
-        # 3. Create SRT file
-        # 4. Burn subtitles into video
-        
+        try:
+            import whisper
+            import pysrt
+            from datetime import timedelta
+        except ImportError:
+            print("Error: Required packages not installed.")
+            print("Please install them with: pip install openai-whisper torch pysrt")
+            return video_path
+            
         if output_path is None:
             base, ext = os.path.splitext(os.path.basename(video_path))
             output_path = os.path.join(self.output_dir, f"{base}_subtitled{ext}")
-            
-        # Placeholder: just copy the file for now
-        cmd = ["cp", video_path, output_path]
-        subprocess.run(cmd)
         
+        # Extract audio from video
+        audio_path = os.path.join(self.output_dir, f"{os.path.basename(video_path)}_audio.wav")
+        extract_cmd = [
+            "ffmpeg",
+            "-i", video_path,
+            "-q:a", "0",
+            "-map", "a",
+            "-f", "wav",
+            audio_path,
+            "-y"
+        ]
+        
+        print(f"Extracting audio from video...")
+        subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Load Whisper model
+        print(f"Loading Whisper {model_size} model...")
+        model = whisper.load_model(model_size)
+        
+        # Transcribe audio
+        print(f"Transcribing audio with Whisper...")
+        result = model.transcribe(audio_path, fp16=False)
+        
+        # Create SRT file
+        srt_path = os.path.join(self.output_dir, f"{os.path.basename(video_path)}.srt")
+        subs = pysrt.SubRipFile()
+        
+        for i, segment in enumerate(result["segments"]):
+            start = timedelta(seconds=segment["start"])
+            end = timedelta(seconds=segment["end"])
+            text = segment["text"].strip()
+            
+            item = pysrt.SubRipItem(
+                index=i+1,
+                start=pysrt.SubRipTime(hours=start.seconds//3600, 
+                                      minutes=(start.seconds//60)%60, 
+                                      seconds=start.seconds%60, 
+                                      milliseconds=start.microseconds//1000),
+                end=pysrt.SubRipTime(hours=end.seconds//3600, 
+                                    minutes=(end.seconds//60)%60, 
+                                    seconds=end.seconds%60, 
+                                    milliseconds=end.microseconds//1000),
+                text=text
+            )
+            subs.append(item)
+        
+        subs.save(srt_path, encoding='utf-8')
+        print(f"Subtitles saved to {srt_path}")
+        
+        # Burn subtitles into video
+        print(f"Adding subtitles to video...")
+        subtitle_cmd = [
+            "ffmpeg",
+            "-i", video_path,
+            "-vf", f"subtitles={srt_path}:force_style='FontSize=24,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H00000000,Bold=1,Alignment=2'",
+            "-c:a", "copy",
+            output_path,
+            "-y"
+        ]
+        
+        subprocess.run(subtitle_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Clean up temporary files
+        os.remove(audio_path)
+        
+        print(f"Video with subtitles created: {output_path}")
         return output_path
     
-
+    def transcribe_video(self, video_path, output_format="srt", model_size="base"):
+        """Transcribe a video using OpenAI's Whisper and save as SRT or text file.
+        
+        Args:
+            video_path (str): Path to the video
+            output_format (str): Output format ('srt' or 'txt')
+            model_size (str): Whisper model size ('tiny', 'base', 'small', 'medium', 'large')
+            
+        Returns:
+            str: Path to the transcript file
+        """
+        try:
+            import whisper
+            import pysrt
+            from datetime import timedelta
+        except ImportError:
+            print("Error: Required packages not installed.")
+            print("Please install them with: pip install openai-whisper torch pysrt")
+            return None
+            
+        # Extract audio from video
+        audio_path = os.path.join(self.output_dir, f"{os.path.basename(video_path)}_audio.wav")
+        extract_cmd = [
+            "ffmpeg",
+            "-i", video_path,
+            "-q:a", "0",
+            "-map", "a",
+            "-f", "wav",
+            audio_path,
+            "-y"
+        ]
+        
+        print(f"Extracting audio from video...")
+        subprocess.run(extract_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        # Load Whisper model
+        print(f"Loading Whisper {model_size} model...")
+        model = whisper.load_model(model_size)
+        
+        # Transcribe audio
+        print(f"Transcribing audio with Whisper...")
+        result = model.transcribe(audio_path, fp16=False)
+        
+        base_name = os.path.splitext(os.path.basename(video_path))[0]
+        
+        if output_format.lower() == "srt":
+            # Create SRT file
+            output_path = os.path.join(self.output_dir, f"{base_name}.srt")
+            subs = pysrt.SubRipFile()
+            
+            for i, segment in enumerate(result["segments"]):
+                start = timedelta(seconds=segment["start"])
+                end = timedelta(seconds=segment["end"])
+                text = segment["text"].strip()
+                
+                item = pysrt.SubRipItem(
+                    index=i+1,
+                    start=pysrt.SubRipTime(hours=start.seconds//3600, 
+                                          minutes=(start.seconds//60)%60, 
+                                          seconds=start.seconds%60, 
+                                          milliseconds=start.microseconds//1000),
+                    end=pysrt.SubRipTime(hours=end.seconds//3600, 
+                                        minutes=(end.seconds//60)%60, 
+                                        seconds=end.seconds%60, 
+                                        milliseconds=end.microseconds//1000),
+                    text=text
+                )
+                subs.append(item)
+            
+            subs.save(output_path, encoding='utf-8')
+        else:
+            # Create plain text file
+            output_path = os.path.join(self.output_dir, f"{base_name}.txt")
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(result["text"])
+        
+        # Clean up temporary files
+        os.remove(audio_path)
+        
+        print(f"Transcript saved to {output_path}")
+        return output_path
     
     def add_text_overlay(self, video_path, text, position="bottom", output_path=None):
         """Add text overlay to a video.

@@ -1,10 +1,10 @@
-# Makefile for ViralClipGenerator (macOS optimized)
+# Makefile for Clippy (macOS optimized)
 
 # Default output directory (can be overridden via command line)
-OUTPUT_DIR = output
+OUTPUT_DIR = output_clips
 
 # Default targets
-.PHONY: all clean help convert
+.PHONY: all clean help convert install setup
 
 # Default target
 all: help
@@ -17,6 +17,37 @@ clean:
 		echo "Directory cleaned successfully."; \
 	else \
 		echo "Directory $(OUTPUT_DIR) does not exist."; \
+	fi
+
+# Create virtual environment and install dependencies using uv
+setup:
+	@echo "Setting up environment with uv..."
+	@if ! command -v uv >/dev/null 2>&1; then \
+		echo "uv is not installed. Please install uv first:"; \
+		echo "curl -LsSf https://astral.sh/uv/install.sh | sh"; \
+		exit 1; \
+	fi
+	@if [ -n "$$VIRTUAL_ENV" ]; then \
+		echo "Virtual environment is already active at: $$VIRTUAL_ENV"; \
+		echo "Installing dependencies with uv..."; \
+		uv pip install -r requirements.txt; \
+		echo "Setup complete!"; \
+	else \
+		echo "Creating virtual environment..."; \
+		uv venv; \
+		echo "Installing dependencies with uv..."; \
+		. .venv/bin/activate && uv pip install -r requirements.txt; \
+		echo ""; \
+		echo "Creating activation script..."; \
+		echo '#!/bin/bash' > activate_env.sh; \
+		echo 'source .venv/bin/activate' >> activate_env.sh; \
+		echo 'echo "Virtual environment activated! You can now run: python clippy.py [arguments]"' >> activate_env.sh; \
+		chmod +x activate_env.sh; \
+		echo ""; \
+		echo "Setup complete! To activate the virtual environment, run:"; \
+		echo "source ./activate_env.sh"; \
+		echo ""; \
+		echo "This will activate the environment in your current shell."; \
 	fi
 
 # Check for FFmpeg installation on macOS
@@ -37,7 +68,7 @@ convert: check-ffmpeg
 	@SOURCE_FILE=$$(find $(OUTPUT_DIR) -name "source_video*" | head -n 1); \
 	if [ -z "$$SOURCE_FILE" ]; then \
 		echo "Error: No source video found in $(OUTPUT_DIR) directory"; \
-		echo "Please download a video first using: python3 main.py URL --download-only"; \
+		echo "Please download a video first using: python3 clippy.py URL --download-only"; \
 		exit 1; \
 	else \
 		echo "Found source file: $$SOURCE_FILE"; \
@@ -48,19 +79,37 @@ convert: check-ffmpeg
 		fi; \
 	fi
 
-# Show help
-help:
-	@echo "ViralClipGenerator Makefile (macOS Version)"
-	@echo ""
-	@echo "Available targets:"
-	@echo "  clean              - Remove all files from the output directory"
-	@echo "  convert            - Convert the downloaded source video to QuickTime-compatible MP4"
-	@echo "  help               - Display this help message"
-	@echo ""
-	@echo "Usage pattern:"
-	@echo "  1. python3 main.py URL --download-only"
-	@echo "  2. make convert"
-	@echo ""
-	@echo "Variables:"
-	@echo "  OUTPUT_DIR         - Output directory (default: '$(OUTPUT_DIR)')"
-	@echo "                       Override with: make clean OUTPUT_DIR=my_directory"
+# Download a video without processing
+download: check-ffmpeg
+	@if [ -z "$(URL)" ]; then \
+		echo "Error: URL parameter is required. Usage: make download URL=https://www.youtube.com/watch?v=VIDEO_ID"; \
+		exit 1; \
+	else \
+		echo "Downloading video from: $(URL)"; \
+		python3 clippy.py "$(URL)" --download-only --output-dir="$(OUTPUT_DIR)"; \
+	fi
+
+# All-in-one command: clean, download, and convert
+video:
+	@if [ -z "$(VIDEO_URL)" ]; then \
+		echo "Error: VIDEO_URL parameter is required. Usage: make video VIDEO_URL=https://www.youtube.com/watch?v=VIDEO_ID"; \
+		exit 1; \
+	else \
+		echo "=== Step 1: Cleaning output directory ==="; \
+		$(MAKE) clean; \
+		echo ""; \
+		echo "=== Step 2: Downloading video ==="; \
+		python3 clippy.py "$(VIDEO_URL)" --download-only --output-dir="$(OUTPUT_DIR)"; \
+		echo ""; \
+		echo "=== Step 3: Converting to MP4 ==="; \
+		$(MAKE) convert; \
+		echo ""; \
+		echo "=== Process complete! ==="; \
+		echo "Your video is available at: $(OUTPUT_DIR)/source_video.mp4"; \
+	fi
+
+# Create a clip with time range
+clip: check-ffmpeg
+	@if [ -z "$(URL)" ]; then \
+		echo "Error: URL parameter is required."; \
+		echo "Usage: make clip URL=https://www.youtube.com/watch?v=VIDEO_ID"
