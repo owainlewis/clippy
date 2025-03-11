@@ -423,6 +423,12 @@ def main():
                         help="Only download the video without creating clips")
     parser.add_argument("--output-filename", 
                         help="Custom filename for downloaded video (only used with --download-only)")
+    parser.add_argument("--transcribe", action="store_true",
+                        help="Transcribe the video using Whisper (creates SRT file by default)")
+    parser.add_argument("--transcribe-format", choices=["srt", "txt"], default="txt",
+                        help="Format for transcription output (only used with --transcribe)")
+    parser.add_argument("--whisper-model", choices=["tiny", "base", "small", "medium", "large"], 
+                        default="base", help="Whisper model size (larger = more accurate but slower)")
     
     args = parser.parse_args()
     
@@ -440,6 +446,23 @@ def main():
             
         downloaded_path = generator.download_video(args.source, output_path)
         print(f"Video downloaded successfully: {downloaded_path}")
+        return
+    
+    # Handle transcribe option
+    if args.transcribe:
+        # If it's a URL, download it first
+        if args.source.startswith(("http://", "https://")):
+            print("Downloading video first...")
+            video_path = generator.download_video(args.source)
+        else:
+            video_path = args.source
+            
+        transcript_path = generator.transcribe_video(
+            video_path, 
+            output_format=args.transcribe_format,
+            model_size=args.whisper_model
+        )
+        print(f"Transcription completed: {transcript_path}")
         return
     
     # Regular clip generation

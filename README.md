@@ -5,9 +5,10 @@ A Python tool for extracting and processing video clips to create engaging, soci
 ## Features
 
 - Extract specific segments from longer videos using timestamps
-- Download videos from YouTube and other platforms
+- Download videos from YouTube and other supported platforms
 - Generate random clips if no time range is specified
-- Add automatic subtitles (via optional speech recognition)
+- Add automatic subtitles using OpenAI's Whisper speech recognition
+- Transcribe videos to SRT or text format
 - Add text overlays like calls-to-action
 - Format videos for various social media platforms (portrait, square, landscape)
 - Command-line interface for easy use in scripts and automation workflows
@@ -71,32 +72,40 @@ python clippy.py video_source [options]
 
 #### Options:
 
-- `--time-range "START-END"`: Specific time range for the clip (e.g., "1:13-1:45")
-- `--duration SECONDS`: Duration in seconds (used if no time-range specified)
+- `--duration SECONDS`: Duration in seconds for random clip generation
 - `--format {portrait,square,landscape}`: Target format for social media
 - `--no-subs`: Disable subtitles
 - `--no-text`: Disable text overlay
 - `--output-dir DIRECTORY`: Directory to save output files
 - `--download-only`: Only download the video without creating clips
 - `--output-filename FILENAME`: Custom filename for downloaded video (only used with --download-only)
+- `--transcribe`: Transcribe the video using Whisper (creates SRT file)
+- `--transcribe-format {srt,txt}`: Format for transcription output
+- `--whisper-model {tiny,base,small,medium,large}`: Whisper model size (larger = more accurate but slower)
 
 #### Examples:
 
 ```bash
-# Extract from 1:13 to 1:45 from a YouTube video
-python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --time-range "1:13-1:45"
+# Extract a 15-second random clip from a YouTube video
+python clippy.py https://www.youtube.com/watch?v=VIDEO_ID
 
 # Extract a 30-second random clip from a local file in square format
 python clippy.py my_video.mp4 --duration 30 --format square
 
 # Create a portrait mode clip with no text overlay
-python clippy.py my_video.mp4 --time-range "2:30-3:15" --format portrait --no-text
+python clippy.py my_video.mp4 --format portrait --no-text
 
 # Just download a video without processing it
 python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --download-only
 
 # Download with a custom filename
 python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --download-only --output-filename="my_video.mp4"
+
+# Transcribe a video to SRT format using Whisper
+python clippy.py my_video.mp4 --transcribe
+
+# Transcribe a video to plain text using Whisper with the medium model
+python clippy.py my_video.mp4 --transcribe --transcribe-format txt --whisper-model medium
 ```
 
 ### Using the Makefile (macOS)
@@ -110,28 +119,12 @@ make clean
 # Convert a downloaded video to MP4 format
 make convert
 
-# For help with Makefile commands
-make help
+# Download a video
+make download URL=https://www.youtube.com/watch?v=VIDEO_ID
+
+# All-in-one: clean, download, and convert
+make video VIDEO_URL=https://www.youtube.com/watch?v=VIDEO_ID
 ```
-
-#### Typical Workflow with Makefile:
-
-1. Download a video: 
-   ```bash
-   python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --download-only
-   ```
-
-2. Convert to MP4 format:
-   ```bash
-   make convert
-   ```
-
-### Time Format
-
-Time ranges can be specified in multiple formats:
-- `MM:SS-MM:SS`: Minutes and seconds (e.g., "1:30-2:45")
-- `H:MM:SS-H:MM:SS`: Hours, minutes, and seconds (e.g., "1:30:00-1:45:30")
-- `S-S`: Raw seconds (e.g., "90-180")
 
 ### Python API
 
@@ -143,10 +136,10 @@ from clippy import ViralClipGenerator
 # Initialize the generator
 generator = ViralClipGenerator(output_dir="output_clips")
 
-# Create a clip with specific time range
+# Create a viral clip
 clip_path = generator.create_viral_clip(
     "https://www.youtube.com/watch?v=VIDEO_ID",
-    time_range="1:13-1:45",
+    clip_duration=15,  # 15 seconds
     add_subs=True,
     add_text=True,
     format="portrait"
@@ -156,13 +149,21 @@ print(f"Clip created: {clip_path}")
 # Process a local file with random clip selection
 clip_path = generator.create_viral_clip(
     "path/to/local/video.mp4",
-    clip_duration=15,  # 15 seconds
+    clip_duration=30,  # 30 seconds
     format="square"
 )
 
 # Just download a video without processing
 downloaded_path = generator.download_video("https://www.youtube.com/watch?v=VIDEO_ID")
 print(f"Video downloaded to: {downloaded_path}")
+
+# Transcribe a video using Whisper
+transcript_path = generator.transcribe_video(
+    "path/to/video.mp4",
+    output_format="srt",  # or "txt"
+    model_size="base"  # options: tiny, base, small, medium, large
+)
+print(f"Transcript saved to: {transcript_path}")
 ```
 
 ## Advanced Usage
@@ -181,22 +182,26 @@ result = generator.add_text_overlay(
 )
 ```
 
-### Speech Recognition for Subtitles
+### Speech Recognition with Whisper
 
-The subtitle functionality currently provides a framework that you can extend with your preferred speech recognition library:
+The subtitle functionality uses OpenAI's Whisper for speech recognition:
 
-- [Whisper](https://github.com/openai/whisper): OpenAI's speech recognition system
-- [Vosk](https://github.com/alphacep/vosk-api): Offline speech recognition
-- [SpeechRecognition](https://github.com/Uberi/speech_recognition): Python library for speech recognition
-
-To implement, modify the `add_subtitles()` method in the `ViralClipGenerator` class.
+```python
+generator = ViralClipGenerator()
+video_with_subs = generator.add_subtitles(
+    "video.mp4",
+    model_size="base"  # Options: tiny, base, small, medium, large
+)
+```
 
 ## Requirements
 
 - `ffmpeg`: Video processing
 - `yt-dlp`: Video downloading
-- `pandas` (optional): For metadata processing
-- Speech recognition library of your choice (for subtitle functionality)
+- `openai-whisper`: Speech recognition
+- `torch`: Required for Whisper
+- `pysrt`: SRT file handling
+- `ffmpeg-python`: Python bindings for FFmpeg
 
 ## License
 
