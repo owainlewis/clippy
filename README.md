@@ -14,6 +14,7 @@ A Python tool for extracting and processing video clips to create engaging, soci
 - Command-line interface for easy use in scripts and automation workflows
 - Download-only option for saving videos without processing
 - Easy conversion between video formats using Make
+- Support for multiple video formats and quality options
 
 ## Installation
 
@@ -79,9 +80,9 @@ python clippy.py video_source [options]
 - `--output-dir DIRECTORY`: Directory to save output files
 - `--download-only`: Only download the video without creating clips
 - `--output-filename FILENAME`: Custom filename for downloaded video (only used with --download-only)
-- `--transcribe`: Transcribe the video using Whisper (creates SRT file)
-- `--transcribe-format {srt,txt}`: Format for transcription output
-- `--whisper-model {tiny,base,small,medium,large}`: Whisper model size (larger = more accurate but slower)
+- `--transcribe`: Transcribe the video using Whisper (creates SRT file by default)
+- `--transcribe-format {srt,txt}`: Format for transcription output (default: srt)
+- `--whisper-model {tiny,base,small,medium,large}`: Whisper model size (default: base)
 
 #### Examples:
 
@@ -106,6 +107,9 @@ python clippy.py my_video.mp4 --transcribe
 
 # Transcribe a video to plain text using Whisper with the medium model
 python clippy.py my_video.mp4 --transcribe --transcribe-format txt --whisper-model medium
+
+# Transcribe a YouTube video (will download first)
+python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --transcribe
 ```
 
 ### Using the Makefile (macOS)
@@ -124,6 +128,9 @@ make download URL=https://www.youtube.com/watch?v=VIDEO_ID
 
 # All-in-one: clean, download, and convert
 make video VIDEO_URL=https://www.youtube.com/watch?v=VIDEO_ID
+
+# Run functional tests
+make test
 ```
 
 ### Python API

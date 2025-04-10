@@ -1,0 +1,9 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["clippy"]
+
+[tool.setuptools.package-data]
+clippy = ["*.md", "*.txt"] 

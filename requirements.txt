@@ -1,5 +1,6 @@
-yt-dlp>=2023.11.14
-ffmpeg-python>=0.2.0
+yt-dlp>=2023.11.16
 openai-whisper>=20231117
 torch>=2.0.0
 pysrt>=1.1.2
+ffmpeg-python>=0.2.0
+

@@ -31,9 +31,21 @@ if [ -z "$VIRTUAL_ENV" ]; then
     fi
 fi
 
-# Run the transcription
-echo "Starting video download and transcription..."
-python clippy.py "$VIDEO_URL" --transcribe --transcribe-format txt --whisper-model $WHISPER_MODEL --output-dir $OUTPUT_DIR
+# First, download the video in WebM format
+echo "Downloading video in WebM format..."
+yt-dlp -f "bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]/best" \
+       --merge-output-format webm \
+       -o "$OUTPUT_DIR/source_video.webm" \
+       "$VIDEO_URL"
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to download video"
+    exit 1
+fi
+
+# Run the transcription on the downloaded WebM file
+echo "Starting transcription..."
+python clippy.py "$OUTPUT_DIR/source_video.webm" --transcribe --transcribe-format txt --whisper-model $WHISPER_MODEL --output-dir $OUTPUT_DIR
 
 # Check if transcription was successful
 if [ $? -eq 0 ]; then

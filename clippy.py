@@ -30,18 +30,32 @@ class ViralClipGenerator:
         if output_path is None:
             output_path = os.path.join(self.output_dir, "source_video")
             
-        # Download in best available quality
-        # This selects the best video and audio separately and then merges them
+        # Download in best available quality with specific format selection
         ydl_opts = {
             'outtmpl': output_path + '.%(ext)s',  # Let yt-dlp add the correct extension
         }
         
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            downloaded_file = ydl.prepare_filename(info)
-            
-        print(f"Video downloaded to: {downloaded_file}")
-        return downloaded_file
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                # First try to get video info
+                info = ydl.extract_info(url, download=False)
+                if info:
+                    # If we got info, proceed with download
+                    info = ydl.extract_info(url, download=True)
+                    downloaded_file = ydl.prepare_filename(info)
+                    print(f"Video downloaded to: {downloaded_file}")
+                    return downloaded_file
+                else:
+                    raise Exception("Could not extract video information")
+        except Exception as e:
+            print(f"Error downloading video: {str(e)}")
+            # Try with simpler format selection as fallback
+            ydl_opts['format'] = 'best'
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                downloaded_file = ydl.prepare_filename(info)
+                print(f"Video downloaded to: {downloaded_file}")
+                return downloaded_file
     
     def get_video_duration(self, video_path):
         """Get the duration of a video file.
