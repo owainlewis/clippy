@@ -4,7 +4,7 @@
 OUTPUT_DIR = output_clips
 
 # Default targets
-.PHONY: all clean help convert install setup
+.PHONY: all clean help convert install setup test
 
 # Default target
 all: help
@@ -29,19 +29,19 @@ setup:
 	fi
 	@if [ -n "$$VIRTUAL_ENV" ]; then \
 		echo "Virtual environment is already active at: $$VIRTUAL_ENV"; \
-		echo "Installing dependencies with uv..."; \
-		uv pip install -r requirements.txt; \
+		echo "Installing package in development mode..."; \
+		pip install -e .; \
 		echo "Setup complete!"; \
 	else \
 		echo "Creating virtual environment..."; \
 		uv venv; \
-		echo "Installing dependencies with uv..."; \
-		. .venv/bin/activate && uv pip install -r requirements.txt; \
+		echo "Installing package in development mode..."; \
+		. .venv/bin/activate && pip install -e .; \
 		echo ""; \
 		echo "Creating activation script..."; \
 		echo '#!/bin/bash' > activate_env.sh; \
 		echo 'source .venv/bin/activate' >> activate_env.sh; \
-		echo 'echo "Virtual environment activated! You can now run: python clippy.py [arguments]"' >> activate_env.sh; \
+		echo 'echo "Virtual environment activated! You can now run: python -m clippy.cli [arguments]"' >> activate_env.sh; \
 		chmod +x activate_env.sh; \
 		echo ""; \
 		echo "Setup complete! To activate the virtual environment, run:"; \
@@ -68,7 +68,7 @@ convert: check-ffmpeg
 	@SOURCE_FILE=$$(find $(OUTPUT_DIR) -name "source_video*" | head -n 1); \
 	if [ -z "$$SOURCE_FILE" ]; then \
 		echo "Error: No source video found in $(OUTPUT_DIR) directory"; \
-		echo "Please download a video first using: python3 clippy.py URL --download-only"; \
+		echo "Please download a video first using: make download URL=..."; \
 		exit 1; \
 	else \
 		echo "Found source file: $$SOURCE_FILE"; \
@@ -86,7 +86,11 @@ download: check-ffmpeg
 		exit 1; \
 	else \
 		echo "Downloading video from: $(URL)"; \
-		python3 clippy.py "$(URL)" --download-only --output-dir="$(OUTPUT_DIR)"; \
+		if [ -n "$$VIRTUAL_ENV" ]; then \
+			python -m clippy.cli "$(URL)" --download-only --output-dir="$(OUTPUT_DIR)"; \
+		else \
+			. .venv/bin/activate && python -m clippy.cli "$(URL)" --download-only --output-dir="$(OUTPUT_DIR)"; \
+		fi; \
 	fi
 
 # All-in-one command: clean, download, and convert
@@ -99,7 +103,11 @@ video:
 		$(MAKE) clean; \
 		echo ""; \
 		echo "=== Step 2: Downloading video ==="; \
-		python3 clippy.py "$(VIDEO_URL)" --download-only --output-dir="$(OUTPUT_DIR)"; \
+		if [ -n "$$VIRTUAL_ENV" ]; then \
+			python -m clippy.cli "$(VIDEO_URL)" --download-only --output-dir="$(OUTPUT_DIR)"; \
+		else \
+			. .venv/bin/activate && python -m clippy.cli "$(VIDEO_URL)" --download-only --output-dir="$(OUTPUT_DIR)"; \
+		fi; \
 		echo ""; \
 		echo "=== Step 3: Converting to MP4 ==="; \
 		$(MAKE) convert; \
@@ -108,8 +116,31 @@ video:
 		echo "Your video is available at: $(OUTPUT_DIR)/source_video.mp4"; \
 	fi
 
-# Create a clip with time range
-clip: check-ffmpeg
-	@if [ -z "$(URL)" ]; then \
-		echo "Error: URL parameter is required."; \
-		echo "Usage: make clip URL=https://www.youtube.com/watch?v=VIDEO_ID"
+# Run functional tests
+test:
+	@echo "Running functional tests..."
+	@if [ -f "./test/functional.sh" ]; then \
+		if [ -n "$$VIRTUAL_ENV" ]; then \
+			./test/functional.sh; \
+		else \
+			. .venv/bin/activate && ./test/functional.sh; \
+		fi; \
+	else \
+		echo "Error: Functional test script not found."; \
+		exit 1; \
+	fi
+
+# Help target
+help:
+	@echo "Clippy - Video Processing Tool"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  make setup           - Set up the development environment"
+	@echo "  make clean           - Clean the output directory"
+	@echo "  make convert         - Convert downloaded video to MP4"
+	@echo "  make download URL=   - Download a video"
+	@echo "  make video VIDEO_URL=- Download and convert a video"
+	@echo "  make test           - Run functional tests"
+	@echo ""
+	@echo "Example:"
+	@echo "  make video VIDEO_URL=https://www.youtube.com/watch?v=VIDEO_ID"
