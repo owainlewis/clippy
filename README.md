@@ -2,8 +2,11 @@
 
 A Python tool for extracting and processing video clips to create engaging, social media-ready content.
 
+**Now with FastAPI Web API support!** 🚀
+
 ## Features
 
+### Core Features
 - Extract specific segments from longer videos using timestamps
 - Download videos from YouTube and other supported platforms
 - Generate random clips if no time range is specified
@@ -15,6 +18,14 @@ A Python tool for extracting and processing video clips to create engaging, soci
 - Download-only option for saving videos without processing
 - Easy conversion between video formats using Make
 - Support for multiple video formats and quality options
+
+### Web API Features
+- **REST API**: FastAPI-based web API for programmatic access
+- **File Upload**: Upload videos directly through the web interface
+- **Background Processing**: Asynchronous task processing with status tracking
+- **Interactive Documentation**: Auto-generated API docs with Swagger UI
+- **Multiple Output Formats**: Support for various video and transcription formats
+- **Task Management**: Track processing status and download results
 
 ## Installation
 
@@ -171,6 +182,217 @@ transcript_path = generator.transcribe_video(
     model_size="base"  # options: tiny, base, small, medium, large
 )
 print(f"Transcript saved to: {transcript_path}")
+```
+
+## Web API Usage
+
+Clippy now includes a FastAPI-based web API for programmatic access and integration with other applications.
+
+### Starting the API Server
+
+#### Development Mode
+```bash
+# Start the server with auto-reload
+clippy-server --reload --host 0.0.0.0 --port 8000
+
+# Or using the startup script
+python start_server.py
+```
+
+#### Production Mode
+```bash
+# Start with multiple workers
+clippy-server --host 0.0.0.0 --port 8000 --workers 4
+
+# Using environment variables
+export CLIPPY_HOST=0.0.0.0
+export CLIPPY_PORT=8000
+export CLIPPY_WORKERS=4
+export CLIPPY_OUTPUT_DIR=/path/to/output
+python start_server.py
+```
+
+### API Documentation
+
+Once the server is running, you can access:
+- **Interactive API docs**: http://localhost:8000/docs
+- **ReDoc documentation**: http://localhost:8000/redoc
+- **OpenAPI schema**: http://localhost:8000/openapi.json
+
+### API Endpoints
+
+The API provides several endpoints that match the functionality of the original CLI tool:
+
+- **`POST /process`** - Create a complete viral clip (download → random clip → subtitles → text → crop)
+- **`POST /extract-clip`** - Extract a specific time segment from a video
+- **`POST /generate-random-clip`** - Generate a random clip from a video
+- **`POST /transcribe`** - Transcribe video to SRT or text format
+- **`POST /download`** - Download video from URL
+- **`POST /add-subtitles`** - Add subtitles using Whisper
+- **`POST /add-text-overlay`** - Add custom text overlay
+- **`POST /crop-for-social`** - Crop video for social media formats
+- **`POST /upload`** - Upload video files
+- **`GET /tasks/{task_id}`** - Check processing status
+- **`GET /download/{filename}`** - Download processed files
+
+#### Upload Video
+```bash
+curl -X POST "http://localhost:8000/upload" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@your_video.mp4"
+```
+
+#### Process Video (Create Viral Clip)
+```bash
+curl -X POST "http://localhost:8000/process" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "file_id_from_upload",
+    "clip_duration": 15,
+    "format": "portrait",
+    "add_subs": true,
+    "add_text": true
+  }'
+```
+
+#### Extract Specific Clip
+```bash
+curl -X POST "http://localhost:8000/extract-clip" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "file_id_from_upload",
+    "start_time": 30.0,
+    "duration": 15.0
+  }'
+```
+
+#### Generate Random Clip
+```bash
+curl -X POST "http://localhost:8000/generate-random-clip" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "file_id_from_upload",
+    "clip_duration": 30
+  }'
+```
+
+#### Add Subtitles Only
+```bash
+curl -X POST "http://localhost:8000/add-subtitles" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "file_id_from_upload",
+    "model_size": "base"
+  }'
+```
+
+#### Add Text Overlay Only
+```bash
+curl -X POST "http://localhost:8000/add-text-overlay" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "file_id_from_upload",
+    "text": "Follow for more!",
+    "position": "bottom"
+  }'
+```
+
+#### Crop for Social Media
+```bash
+curl -X POST "http://localhost:8000/crop-for-social" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "file_id_from_upload",
+    "format": "square"
+  }'
+```
+
+#### Transcribe Video
+```bash
+curl -X POST "http://localhost:8000/transcribe" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "file_id_from_upload",
+    "output_format": "srt",
+    "whisper_model": "base"
+  }'
+```
+
+#### Download Video from URL
+```bash
+curl -X POST "http://localhost:8000/download" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://www.youtube.com/watch?v=VIDEO_ID",
+    "output_filename": "my_video.mp4"
+  }'
+```
+
+#### Check Task Status
+```bash
+curl -X GET "http://localhost:8000/tasks/{task_id}" \
+  -H "accept: application/json"
+```
+
+#### Download Processed File
+```bash
+curl -X GET "http://localhost:8000/download/{filename}" \
+  --output processed_video.mp4
+```
+
+### Python Client Example
+
+```python
+import requests
+import time
+
+# Upload a video
+with open('my_video.mp4', 'rb') as f:
+    response = requests.post(
+        'http://localhost:8000/upload',
+        files={'file': f}
+    )
+    file_id = response.json()['file_id']
+
+# Process the video
+response = requests.post(
+    'http://localhost:8000/process',
+    json={
+        'source': file_id,
+        'clip_duration': 30,
+        'format': 'square',
+        'add_subs': True,
+        'add_text': True
+    }
+)
+task_id = response.json()['task_id']
+
+# Check status until complete
+while True:
+    response = requests.get(f'http://localhost:8000/tasks/{task_id}')
+    status = response.json()
+
+    if status['status'] == 'completed':
+        # Download the result
+        result_url = status['result_url']
+        response = requests.get(f'http://localhost:8000{result_url}')
+        with open('processed_clip.mp4', 'wb') as f:
+            f.write(response.content)
+        break
+    elif status['status'] == 'failed':
+        print(f"Processing failed: {status['error']}")
+        break
+
+    time.sleep(2)  # Wait 2 seconds before checking again
 ```
 
 ## Advanced Usage

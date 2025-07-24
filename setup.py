@@ -29,10 +29,15 @@ setup(
         "torch>=2.0.0",
         "pysrt>=1.1.2",
         "ffmpeg-python>=0.2.0",
+        "fastapi>=0.104.0",
+        "uvicorn[standard]>=0.24.0",
+        "python-multipart>=0.0.6",
+        "aiofiles>=23.2.0",
     ],
     entry_points={
         "console_scripts": [
             "clippy=clippy.cli:main",
+            "clippy-server=clippy.server:main",
         ],
     },
 )
