@@ -30,13 +30,13 @@ setup:
 	@if [ -n "$$VIRTUAL_ENV" ]; then \
 		echo "Virtual environment is already active at: $$VIRTUAL_ENV"; \
 		echo "Installing package in development mode..."; \
-		pip install -e .; \
+		uv pip install -e .; \
 		echo "Setup complete!"; \
 	else \
 		echo "Creating virtual environment..."; \
 		uv venv; \
 		echo "Installing package in development mode..."; \
-		. .venv/bin/activate && pip install -e .; \
+		uv pip install -e .; \
 		echo ""; \
 		echo "Creating activation script..."; \
 		echo '#!/bin/bash' > activate_env.sh; \

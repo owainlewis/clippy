@@ -38,18 +38,18 @@ A Python tool for extracting and processing video clips to create engaging, soci
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
-   #### Using uv (faster alternative):
+   #### Using uv (faster alternative, recommended):
    ```bash
    # Install uv if you don't have it
    curl -LsSf https://astral.sh/uv/install.sh | sh
 
-   # Create virtual environment and install dependencies
+   # Create virtual environment and install the package
    uv venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   uv pip install -r requirements.txt
+   uv pip install -e .
    ```
 
    #### Using the Makefile (recommended):
