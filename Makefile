@@ -4,7 +4,7 @@
 OUTPUT_DIR = output_clips
 
 # Default targets
-.PHONY: all clean help convert install setup test
+.PHONY: all clean help convert install setup test server server-dev api-docs
 
 # Default target
 all: help
@@ -130,6 +130,29 @@ test:
 		exit 1; \
 	fi
 
+# Start the API server in development mode
+server-dev:
+	@echo "Starting Clippy API server in development mode..."
+	@if [ -n "$$VIRTUAL_ENV" ]; then \
+		clippy-server --reload --host 0.0.0.0 --port 8000; \
+	else \
+		. .venv/bin/activate && clippy-server --reload --host 0.0.0.0 --port 8000; \
+	fi
+
+# Start the API server in production mode
+server:
+	@echo "Starting Clippy API server..."
+	@if [ -n "$$VIRTUAL_ENV" ]; then \
+		clippy-server --host 0.0.0.0 --port 8000 --workers 4; \
+	else \
+		. .venv/bin/activate && clippy-server --host 0.0.0.0 --port 8000 --workers 4; \
+	fi
+
+# Open API documentation in browser
+api-docs:
+	@echo "Opening API documentation..."
+	@open http://localhost:8000/docs || xdg-open http://localhost:8000/docs || echo "Please open http://localhost:8000/docs in your browser"
+
 # Help target
 help:
 	@echo "Clippy - Video Processing Tool"
@@ -141,6 +164,13 @@ help:
 	@echo "  make download URL=   - Download a video"
 	@echo "  make video VIDEO_URL=- Download and convert a video"
 	@echo "  make test           - Run functional tests"
+	@echo "  make server-dev      - Start API server in development mode"
+	@echo "  make server          - Start API server in production mode"
+	@echo "  make api-docs        - Open API documentation in browser"
 	@echo ""
-	@echo "Example:"
+	@echo "CLI Examples:"
 	@echo "  make video VIDEO_URL=https://www.youtube.com/watch?v=VIDEO_ID"
+	@echo ""
+	@echo "API Examples:"
+	@echo "  make server-dev      # Start development server"
+	@echo "  make api-docs        # View API documentation"
