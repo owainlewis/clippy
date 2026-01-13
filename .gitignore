@@ -41,8 +41,8 @@ test_output/
 *.mp4
 *.webm
 *.srt
-*.txt
 *.wav
+activate_env.sh
 
 # System files
 .DS_Store

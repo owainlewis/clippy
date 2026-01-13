@@ -20,9 +20,9 @@ A Python tool for extracting and processing video clips to create engaging, soci
 
 ### Prerequisites
 
-- Python 3.7+
+- Python 3.9+
 - FFmpeg (for video processing)
-- Make (for using the Makefile functionality)
+- Make (optional, for using Makefile commands)
 
 ### Setup
 
@@ -32,33 +32,21 @@ A Python tool for extracting and processing video clips to create engaging, soci
    cd clippy
    ```
 
-2. Create a virtual environment and install dependencies:
-
-   #### Using pip (traditional method):
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -e .
-   ```
-
-   #### Using uv (faster alternative, recommended):
+2. Install using uv (recommended):
    ```bash
    # Install uv if you don't have it
    curl -LsSf https://astral.sh/uv/install.sh | sh
 
-   # Create virtual environment and install the package
-   uv venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   uv pip install -e .
+   # Install the package with dependencies
+   uv sync
+
+   # Run clippy
+   uv run clippy --help
    ```
 
-   #### Using the Makefile (recommended):
+   Or using pip:
    ```bash
-   # This will set up everything and create an activation script
-   make setup
-   
-   # Then activate the environment in your current shell
-   source ./activate_env.sh
+   pip install -e .
    ```
 
 ## Usage
@@ -68,7 +56,7 @@ A Python tool for extracting and processing video clips to create engaging, soci
 Extract a clip from a video file or URL:
 
 ```bash
-python clippy.py video_source [options]
+clippy video_source [options]
 ```
 
 #### Options:
@@ -88,28 +76,28 @@ python clippy.py video_source [options]
 
 ```bash
 # Extract a 15-second random clip from a YouTube video
-python clippy.py https://www.youtube.com/watch?v=VIDEO_ID
+clippy https://www.youtube.com/watch?v=VIDEO_ID
 
 # Extract a 30-second random clip from a local file in square format
-python clippy.py my_video.mp4 --duration 30 --format square
+clippy my_video.mp4 --duration 30 --format square
 
 # Create a portrait mode clip with no text overlay
-python clippy.py my_video.mp4 --format portrait --no-text
+clippy my_video.mp4 --format portrait --no-text
 
 # Just download a video without processing it
-python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --download-only
+clippy https://www.youtube.com/watch?v=VIDEO_ID --download-only
 
 # Download with a custom filename
-python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --download-only --output-filename="my_video.mp4"
+clippy https://www.youtube.com/watch?v=VIDEO_ID --download-only --output-filename="my_video.mp4"
 
 # Transcribe a video to SRT format using Whisper
-python clippy.py my_video.mp4 --transcribe
+clippy my_video.mp4 --transcribe
 
 # Transcribe a video to plain text using Whisper with the medium model
-python clippy.py my_video.mp4 --transcribe --transcribe-format txt --whisper-model medium
+clippy my_video.mp4 --transcribe --transcribe-format txt --whisper-model medium
 
 # Transcribe a YouTube video (will download first)
-python clippy.py https://www.youtube.com/watch?v=VIDEO_ID --transcribe
+clippy https://www.youtube.com/watch?v=VIDEO_ID --transcribe
 ```
 
 ### Using the Makefile (macOS)
@@ -129,7 +117,7 @@ make download URL=https://www.youtube.com/watch?v=VIDEO_ID
 # All-in-one: clean, download, and convert
 make video VIDEO_URL=https://www.youtube.com/watch?v=VIDEO_ID
 
-# Run functional tests
+# Run tests
 make test
 ```
 

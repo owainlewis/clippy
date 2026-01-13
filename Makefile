@@ -116,18 +116,13 @@ video:
 		echo "Your video is available at: $(OUTPUT_DIR)/source_video.mp4"; \
 	fi
 
-# Run functional tests
+# Run pytest tests
 test:
-	@echo "Running functional tests..."
-	@if [ -f "./test/functional.sh" ]; then \
-		if [ -n "$$VIRTUAL_ENV" ]; then \
-			./test/functional.sh; \
-		else \
-			. .venv/bin/activate && ./test/functional.sh; \
-		fi; \
+	@echo "Running tests with pytest..."
+	@if [ -n "$$VIRTUAL_ENV" ]; then \
+		pytest; \
 	else \
-		echo "Error: Functional test script not found."; \
-		exit 1; \
+		. .venv/bin/activate && pytest; \
 	fi
 
 # Help target
@@ -140,7 +135,7 @@ help:
 	@echo "  make convert         - Convert downloaded video to MP4"
 	@echo "  make download URL=   - Download a video"
 	@echo "  make video VIDEO_URL=- Download and convert a video"
-	@echo "  make test           - Run functional tests"
+	@echo "  make test            - Run pytest tests"
 	@echo ""
 	@echo "Example:"
 	@echo "  make video VIDEO_URL=https://www.youtube.com/watch?v=VIDEO_ID"

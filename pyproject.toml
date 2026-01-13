@@ -7,13 +7,17 @@ name = "clippy-video"
 version = "0.1.0"
 description = "A Python tool for extracting and processing video clips to create engaging, social media-ready content"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
     {name = "Owain Lewis", email = "owain@owainlewis.com"}
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Development Status :: 4 - Beta",
@@ -35,8 +39,21 @@ Homepage = "https://github.com/owainlewis/clippy"
 [project.scripts]
 clippy = "clippy.cli:main"
 
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "ipykernel>=6.29.0",
+]
+
 [tool.setuptools]
 packages = ["clippy"]
 
 [tool.setuptools.package-data]
-clippy = ["*.md", "*.txt"] 
+clippy = ["*.md", "*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short" 
